@@ -6,7 +6,7 @@ import streamlit as st
 import pandas as pd
 import os
 
-st.title("💰 Aplikasi Manajemen Keuangan")
+st.title("Keuanganku")
 
 FILE_NAME = "data_keuangan.csv"
 
