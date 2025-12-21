@@ -6,11 +6,11 @@ import streamlit as st
 import pandas as pd
 import os
 
-st.title("Keuanganku")
+st.title("💰 Aplikasi Manajemen Keuangan")
 
 FILE_NAME = "data_keuangan.csv"
 
-# Jika file belum ada, buat dulu
+# Buat file jika belum ada
 if not os.path.exists(FILE_NAME):
     df = pd.DataFrame(columns=["Jenis", "Jumlah", "Keterangan"])
     df.to_csv(FILE_NAME, index=False)
@@ -18,10 +18,9 @@ if not os.path.exists(FILE_NAME):
 # Load data
 df = pd.read_csv(FILE_NAME)
 
-# Menu
 menu = st.sidebar.selectbox(
     "Menu",
-    ["Tambah Transaksi", "Riwayat Transaksi", "Saldo"]
+    ["Tambah Transaksi", "Riwayat Transaksi", "Saldo & Grafik"]
 )
 
 # ================= TAMBAH TRANSAKSI =================
@@ -47,14 +46,33 @@ elif menu == "Riwayat Transaksi":
     st.subheader("📋 Riwayat Transaksi")
     st.dataframe(df)
 
-# ================= SALDO =================
-elif menu == "Saldo":
-    st.subheader("📊 Saldo Keuangan")
+# ================= SALDO & GRAFIK =================
+elif menu == "Saldo & Grafik":
+    st.subheader("📊 Ringkasan Keuangan")
 
     pemasukan = df[df["Jenis"] == "Pemasukan"]["Jumlah"].sum()
     pengeluaran = df[df["Jenis"] == "Pengeluaran"]["Jumlah"].sum()
     saldo = pemasukan - pengeluaran
 
-    st.write(f"**Total Pemasukan:** Rp {pemasukan}")
-    st.write(f"**Total Pengeluaran:** Rp {pengeluaran}")
-    st.write(f"### 💵 Saldo Akhir: Rp {saldo}")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Pemasukan", f"Rp {pemasukan}")
+    col2.metric("Total Pengeluaran", f"Rp {pengeluaran}")
+    col3.metric("Saldo Akhir", f"Rp {saldo}")
+
+    st.divider()
+
+    # ===== BAR CHART =====
+    st.subheader("📊 Grafik Pemasukan vs Pengeluaran")
+    chart_df = pd.DataFrame({
+        "Kategori": ["Pemasukan", "Pengeluaran"],
+        "Jumlah": [pemasukan, pengeluaran]
+    })
+    st.bar_chart(chart_df.set_index("Kategori"))
+
+    # ===== LINE CHART =====
+    st.subheader("📈 Tren Transaksi")
+    if not df.empty:
+        df["Index"] = range(1, len(df) + 1)
+        st.line_chart(df.set_index("Index")["Jumlah"])
+    else:
+        st.info("Belum ada data untuk ditampilkan.")
