@@ -1,78 +1,43 @@
 import streamlit as st
+from ingredients_data import INGREDIENTS_DB
+from detector import auto_detect_ingredients
 
-st.title("Hello><")
-st.write("Let's start record your finances!")
-import streamlit as st
-import pandas as pd
-import os
-
-st.title("💰 Aplikasi Manajemen Keuangan")
-
-FILE_NAME = "data_keuangan.csv"
-
-# Buat file jika belum ada
-if not os.path.exists(FILE_NAME):
-    df = pd.DataFrame(columns=["Jenis", "Jumlah", "Keterangan"])
-    df.to_csv(FILE_NAME, index=False)
-
-# Load data
-df = pd.read_csv(FILE_NAME)
-
-menu = st.sidebar.selectbox(
-    "Menu",
-    ["Tambah Transaksi", "Riwayat Transaksi", "Saldo & Grafik"]
+st.set_page_config(
+    page_title="Food Ingredient Detector",
+    page_icon="🍜"
 )
 
-# ================= TAMBAH TRANSAKSI =================
-if menu == "Tambah Transaksi":
-    st.subheader("➕ Tambah Transaksi")
+st.title("🍜 Food Ingredient Auto Detector")
+st.write(
+    "Copy **ingredients dari kemasan makanan instan**, "
+    "sistem akan **mendeteksi otomatis** dan menampilkan "
+    "**manfaat, keamanan, dan risiko**."
+)
 
-    jenis = st.selectbox("Jenis Transaksi", ["Pemasukan", "Pengeluaran"])
-    jumlah = st.number_input("Jumlah (Rp)", min_value=0)
-    keterangan = st.text_input("Keterangan")
+input_text = st.text_area(
+    "Masukkan Ingredients",
+    placeholder="Contoh: Gula, Garam, Penguat Rasa (MSG/E621), Pewarna Tartrazin",
+    height=150
+)
 
-    if st.button("Simpan"):
-        data_baru = {
-            "Jenis": jenis,
-            "Jumlah": jumlah,
-            "Keterangan": keterangan
-        }
-        df = pd.concat([df, pd.DataFrame([data_baru])], ignore_index=True)
-        df.to_csv(FILE_NAME, index=False)
-        st.success("Transaksi berhasil disimpan!")
-
-# ================= RIWAYAT =================
-elif menu == "Riwayat Transaksi":
-    st.subheader("📋 Riwayat Transaksi")
-    st.dataframe(df)
-
-# ================= SALDO & GRAFIK =================
-elif menu == "Saldo & Grafik":
-    st.subheader("📊 Ringkasan Keuangan")
-
-    pemasukan = df[df["Jenis"] == "Pemasukan"]["Jumlah"].sum()
-    pengeluaran = df[df["Jenis"] == "Pengeluaran"]["Jumlah"].sum()
-    saldo = pemasukan - pengeluaran
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Pemasukan", f"Rp {pemasukan}")
-    col2.metric("Total Pengeluaran", f"Rp {pengeluaran}")
-    col3.metric("Saldo Akhir", f"Rp {saldo}")
-
-    st.divider()
-
-    # ===== BAR CHART =====
-    st.subheader("📊 Grafik Pemasukan vs Pengeluaran")
-    chart_df = pd.DataFrame({
-        "Kategori": ["Pemasukan", "Pengeluaran"],
-        "Jumlah": [pemasukan, pengeluaran]
-    })
-    st.bar_chart(chart_df.set_index("Kategori"))
-
-    # ===== LINE CHART =====
-    st.subheader("📈 Tren Transaksi")
-    if not df.empty:
-        df["Index"] = range(1, len(df) + 1)
-        st.line_chart(df.set_index("Index")["Jumlah"])
+if st.button("🔍 Analisis"):
+    if not input_text.strip():
+        st.warning("Silakan masukkan ingredients.")
     else:
-        st.info("Belum ada data untuk ditampilkan.")
+        detected = auto_detect_ingredients(
+            input_text,
+            INGREDIENTS_DB
+        )
+
+        if not detected:
+            st.error("Tidak ada bahan yang terdeteksi.")
+        else:
+            st.subheader("📊 Hasil Deteksi")
+
+            for ingredient in detected:
+                data = INGREDIENTS_DB[ingredient]
+
+                st.markdown(f"### 🧪 {ingredient.upper()}")
+                st.success(f"**Fungsi:** {data['fungsi']}")
+                st.info(f"**Keamanan:** {data['keamanan']}")
+                st.warning(f"**Risiko:** {data['risiko']}")
